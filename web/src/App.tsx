@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { GameShell, GameTopbar } from "@freegamestore/games";
+import { GameShell, GameTopbar, GameAuth } from "@freegamestore/games";
 import { Game } from "./components/Game";
 import type { Theme } from "./types";
 
@@ -50,6 +50,7 @@ export default function App() {
             { label: "Score", value: score, accent: true },
             { label: "Best", value: bestScore },
           ]}
+          actions={<GameAuth />}
         />
       }
     >
