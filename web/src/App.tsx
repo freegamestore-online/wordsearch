@@ -4,18 +4,16 @@ import { Game } from "./components/Game";
 import type { Theme } from "./types";
 
 const BEST_SCORE_KEY = "freewordsearch-best";
-const THEMES: Theme[] = ["Animals", "Colors", "Foods", "Countries", "Sports"];
-
 function getBestScore(): number {
   const v = localStorage.getItem(BEST_SCORE_KEY);
   return v ? parseInt(v, 10) : 0;
 }
 
 export default function App() {
-  const [phase, setPhase] = useState<"menu" | "playing" | "over">("menu");
+  const [phase, setPhase] = useState<"menu" | "playing" | "over">("playing");
   const [score, setScore] = useState(0);
   const [bestScore, setBestScore] = useState(getBestScore);
-  const [theme, setTheme] = useState<Theme>("Animals");
+  const [theme] = useState<Theme>("Animals");
   const [gameKey, setGameKey] = useState(0);
   const scoreRef = useRef(0);
 
@@ -64,52 +62,21 @@ export default function App() {
       }
     >
       <div className="relative w-full h-full">
-        {phase === "playing" ? (
-          <Game key={gameKey} theme={theme} onFinish={handleFinish} />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full gap-4">
-            <h1
-              className="text-4xl font-bold"
-              style={{ fontFamily: "Fraunces, serif" }}
+        <Game key={gameKey} theme={theme} onFinish={handleFinish} />
+        {phase === "over" && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4" style={{ background: "rgba(0,0,0,0.55)" }}>
+            <p
+              className="text-xl font-bold"
+              style={{ color: "var(--success)", fontFamily: "Fraunces, serif" }}
             >
-              Word Search
-            </h1>
-            {phase === "over" && (
-              <p
-                className="text-xl font-bold"
-                style={{ color: "var(--success)", fontFamily: "Fraunces, serif" }}
-              >
-                Completed! Score: {score}
-              </p>
-            )}
-            <p style={{ color: "var(--muted)" }}>
-              Find all the hidden words. Drag across letters to select.
+              Completed! Score: {score}
             </p>
-
-            {/* Theme selector */}
-            <div className="flex flex-wrap gap-2 justify-center">
-              {THEMES.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTheme(t)}
-                  className="px-3 py-1.5 text-sm font-semibold rounded-lg min-h-[2.75rem]"
-                  style={{
-                    background: theme === t ? "var(--accent)" : "var(--panel)",
-                    color: theme === t ? "#fff" : "var(--muted)",
-                    border: `1px solid ${theme === t ? "var(--accent)" : "var(--line)"}`,
-                  }}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-
             <button
               onClick={start}
               className="px-6 py-3 rounded-xl font-semibold min-h-[2.75rem]"
               style={{ background: "var(--accent)", color: "#fff" }}
             >
-              {phase === "menu" ? "Start Game" : "Play Again"}
+              Play Again
             </button>
           </div>
         )}
