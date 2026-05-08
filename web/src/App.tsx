@@ -51,6 +51,15 @@ export default function App() {
             { label: "Best", value: bestScore },
           ]}
           actions={<GameAuth />}
+          rules={
+            <div>
+              <h3 style={{ fontWeight: 700 }}>Word Search</h3>
+              <h4 style={{ fontWeight: 600 }}>Rules</h4>
+              <ul><li>Find all hidden words in the letter grid</li><li>Words can go horizontal, vertical, or diagonal</li><li>Five themes to choose from</li></ul>
+              <h4 style={{ fontWeight: 600 }}>Controls</h4>
+              <ul><li>Drag across letters to select a word</li><li>Timer tracks your speed</li></ul>
+            </div>
+          }
         />
       }
     >
