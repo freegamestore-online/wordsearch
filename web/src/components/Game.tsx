@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useGameSounds } from "@freegamestore/games";
 import { generatePuzzle, getWordCells } from "../lib/wordsearch";
 import type { Theme } from "../types";
 
@@ -56,6 +57,9 @@ function getLineCells(
 }
 
 export function Game({ theme, onFinish }: GameProps) {
+  const sounds = useGameSounds();
+  const soundsRef = useRef(sounds);
+  soundsRef.current = sounds;
   const [puzzle] = useState(() => generatePuzzle(theme));
   const [foundWords, setFoundWords] = useState<FoundWord[]>([]);
   const [selectionStart, setSelectionStart] = useState<[number, number] | null>(null);
@@ -82,6 +86,7 @@ export function Game({ theme, onFinish }: GameProps) {
       setFinished(true);
       clearInterval(timerRef.current);
       const finalSeconds = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      soundsRef.current.playLevelUp();
       onFinish(finalSeconds);
     }
   }, [foundWords.length, puzzle.words.length, finished, onFinish]);
@@ -131,6 +136,7 @@ export function Game({ theme, onFinish }: GameProps) {
           ...prev,
           { word: placement.word, colorIndex: prev.length, cells: wordCells },
         ]);
+        soundsRef.current.playClear();
         return;
       }
     },
