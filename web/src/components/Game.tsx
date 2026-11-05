@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useGameSounds } from "@freegamestore/games";
-import { generatePuzzle, getWordCells } from "../lib/wordsearch";
+import { generatePuzzle, getLineCells, getWordCells } from "../lib/wordsearch";
 import type { Theme } from "../types";
 
 const GRID_SIZE = 12;
@@ -26,36 +26,6 @@ function getCellKey(row: number, col: number): string {
   return `${row},${col}`;
 }
 
-/** Given start and end grid cells, return all cells along the line if it's a valid direction */
-function getLineCells(
-  startRow: number,
-  startCol: number,
-  endRow: number,
-  endCol: number,
-): [number, number][] | null {
-  const dRow = endRow - startRow;
-  const dCol = endCol - startCol;
-
-  // Must be horizontal, vertical, or diagonal
-  if (dRow === 0 && dCol === 0) return [[startRow, startCol]];
-
-  const absDr = Math.abs(dRow);
-  const absDc = Math.abs(dCol);
-
-  // Valid directions: straight line (same row, same col, or |dRow| === |dCol|)
-  if (absDr !== 0 && absDc !== 0 && absDr !== absDc) return null;
-
-  const steps = Math.max(absDr, absDc);
-  const stepR = dRow === 0 ? 0 : dRow / steps;
-  const stepC = dCol === 0 ? 0 : dCol / steps;
-
-  const cells: [number, number][] = [];
-  for (let i = 0; i <= steps; i++) {
-    cells.push([startRow + i * stepR, startCol + i * stepC]);
-  }
-  return cells;
-}
-
 export function Game({ theme, onFinish }: GameProps) {
   const sounds = useGameSounds();
   const soundsRef = useRef(sounds);
@@ -67,6 +37,8 @@ export function Game({ theme, onFinish }: GameProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [wrongCells, setWrongCells] = useState<Set<string> | null>(null);
+  const wrongTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const gridRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const startTimeRef = useRef(Date.now());
@@ -79,6 +51,23 @@ export function Game({ theme, onFinish }: GameProps) {
     }, 250);
     return () => clearInterval(timerRef.current);
   }, []);
+
+  // Don't count time while the tab is hidden: shift the start time forward on return.
+  useEffect(() => {
+    let hiddenAt: number | null = null;
+    const onVisibility = () => {
+      if (document.hidden) {
+        hiddenAt = Date.now();
+      } else if (hiddenAt !== null) {
+        startTimeRef.current += Date.now() - hiddenAt;
+        hiddenAt = null;
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
+
+  useEffect(() => () => clearTimeout(wrongTimeoutRef.current), []);
 
   // Check win
   useEffect(() => {
@@ -139,6 +128,13 @@ export function Game({ theme, onFinish }: GameProps) {
         soundsRef.current.playClear();
         return;
       }
+
+      // A dragged line that isn't a (new) word: buzz and flash it briefly.
+      if (cells.length < 2) return;
+      soundsRef.current.playError();
+      setWrongCells(new Set(cells.map(([r, c]) => getCellKey(r, c))));
+      clearTimeout(wrongTimeoutRef.current);
+      wrongTimeoutRef.current = setTimeout(() => setWrongCells(null), 400);
     },
     [puzzle, foundWords],
   );
@@ -245,6 +241,7 @@ export function Game({ theme, onFinish }: GameProps) {
               const key = getCellKey(r, c);
               const foundColor = cellColors.get(key);
               const isSelected = selectionCells.has(key);
+              const isWrong = wrongCells?.has(key) ?? false;
 
               return (
                 <div
@@ -257,8 +254,10 @@ export function Game({ theme, onFinish }: GameProps) {
                       ? foundColor
                       : isSelected
                         ? "var(--accent)"
-                        : "transparent",
-                    color: foundColor || isSelected ? "#fff" : "var(--ink)",
+                        : isWrong
+                          ? "var(--error)"
+                          : "transparent",
+                    color: foundColor || isSelected || isWrong ? "#fff" : "var(--ink)",
                     borderRadius: "0.25rem",
                     transition: "background 0.1s",
                     lineHeight: 1,

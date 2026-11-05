@@ -17,7 +17,7 @@ export interface Puzzle {
 const GRID_SIZE = 12;
 const WORDS_PER_PUZZLE = 8;
 
-const WORD_LISTS: Record<Theme, string[]> = {
+export const WORD_LISTS: Record<Theme, string[]> = {
   Animals: [
     "ELEPHANT", "GIRAFFE", "PENGUIN", "DOLPHIN", "CHEETAH", "GORILLA",
     "LEOPARD", "BUFFALO", "HAMSTER", "PARROT", "FALCON", "TURTLE",
@@ -186,6 +186,36 @@ export function getWordCells(placement: WordPlacement): Set<string> {
   const cells = new Set<string>();
   for (let i = 0; i < placement.word.length; i++) {
     cells.add(`${placement.startRow + i * placement.dRow},${placement.startCol + i * placement.dCol}`);
+  }
+  return cells;
+}
+
+/** Given start and end grid cells, return all cells along the line if it's a valid direction */
+export function getLineCells(
+  startRow: number,
+  startCol: number,
+  endRow: number,
+  endCol: number,
+): [number, number][] | null {
+  const dRow = endRow - startRow;
+  const dCol = endCol - startCol;
+
+  // Must be horizontal, vertical, or diagonal
+  if (dRow === 0 && dCol === 0) return [[startRow, startCol]];
+
+  const absDr = Math.abs(dRow);
+  const absDc = Math.abs(dCol);
+
+  // Valid directions: straight line (same row, same col, or |dRow| === |dCol|)
+  if (absDr !== 0 && absDc !== 0 && absDr !== absDc) return null;
+
+  const steps = Math.max(absDr, absDc);
+  const stepR = dRow === 0 ? 0 : dRow / steps;
+  const stepC = dCol === 0 ? 0 : dCol / steps;
+
+  const cells: [number, number][] = [];
+  for (let i = 0; i <= steps; i++) {
+    cells.push([startRow + i * stepR, startCol + i * stepC]);
   }
   return cells;
 }
